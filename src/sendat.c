@@ -4,7 +4,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
-
+#include <signal.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -24,8 +24,7 @@ struct mosquitto *mosq = NULL;
 char *topic = NULL;
 extern int errno;
 
-void msq_log_callback(struct mosquitto *mosq, void *userdata, int level, const char *str)
-{
+void msq_log_callback(struct mosquitto *mosq, void *userdata, int level, const char *str){
   /* Pring all log messages regardless of level. */
 
   switch(level){
@@ -39,14 +38,68 @@ void msq_log_callback(struct mosquitto *mosq, void *userdata, int level, const c
   }
 
 }
+void SIGTERM_handler(int sig){
+  if (sig == SIGTERM){
+    mosquitto_disconnect(mosq);
+    mosquitto_destroy(mosq);
+    mosquitto_lib_cleanup();
+    fprintf(stderr,"Finish\n");
+    exit(0);
+  }
+}
 
 void mqtt_setup(){
+  // Get parameters from enviroment variables
+  char *host; // localhost by default
+  int port;// 1883 by default
+  int keepalive;// 60 by default
+  bool clean_session;//  true by default
+  char* user;
+  char* passwd;
 
-  char *host = "localhost";
-  int port = 1883;
-  int keepalive = 60;
-  bool clean_session = true;
-  topic = "test";
+  char* env;
+
+  env = getenv("HOST");
+  host = env == NULL?"localhost":env;
+
+  env = getenv("TOPIC");
+  topic = env == NULL?"test":env;
+
+  env = getenv("PORT");
+  if (!env || strcmp(env,"")==0){
+    port = 1883;
+  }else{
+    sscanf(env,"%d",&port);
+  }
+
+  env = getenv("KEEPALIVE");
+  if (!env || strcmp(env,"")==0){
+    keepalive=60;
+  }else{
+    sscanf(env,"%d",&keepalive);
+  }
+
+  env = getenv("CLEAN_SESSION");
+  if (!env || strcmp(env,"")==0){
+    clean_session =true;
+  }else{
+    sscanf(env,"%d",&keepalive);
+  }
+
+  env = getenv("MQTT_USER");
+  if (!env || strcmp(env,"")==0){
+    user =NULL;
+  }else{
+    user = env;
+  }
+
+  env = getenv("MQTT_PASSWORD");
+  if (!env || strcmp(env,"") == 0){
+    passwd =NULL;
+  }else{
+    passwd = env;
+  }
+
 
   mosquitto_lib_init();
   mosq = mosquitto_new(NULL, clean_session, NULL);
@@ -56,6 +109,10 @@ void mqtt_setup(){
   }
 
   mosquitto_log_callback_set(mosq, msq_log_callback);
+
+  if (user != NULL && passwd != NULL){
+    mosquitto_username_pw_set(mosq,user,passwd);
+  }
 
   if(mosquitto_connect(mosq, host, port, keepalive)){
     fprintf(stderr, "Unable to connect.\n");
@@ -97,22 +154,41 @@ void onNewFile(struct inotify_event* ev){
   free(content);
 }
 int main(void){
-  int id,wd,len;
+  int id,wd,len,pid;
   struct inotify_event* ev;
+  char* directory;
+  // Get pid and write to /etc/sendat/sendat.pid
+  pid = getpid();
+  FILE* pidfile = fopen("/etc/sendat/sendat.pid","w");
+  fprintf(pidfile,"%d\n",pid);
+  fclose(pidfile);
 
-  mqtt_setup();
+  // Get environment variable for directory to watch
+  directory = getenv("DIRECTORY");
+  directory = directory == NULL?".":directory;
 
+  // Handle sigterm
+  signal(SIGTERM,SIGTERM_handler);
+
+  // setup mqtt
+   mqtt_setup();
+
+  // allocate space for inotify event descriptor
   ev = (struct inotify_event*) malloc(sizeof(struct inotify_event) + NAME_MAX + 1);
-
+  // start inotify
   id = inotify_init();
-  wd = inotify_add_watch(id, ".", IN_CREATE);
+  // watch file creation in current directory
+  wd = inotify_add_watch(id, directory, IN_CREATE);
 
   while(1){
+    // will be read when a file is created
     len=read(id, ev, sizeof(struct inotify_event) + NAME_MAX + 1);
+    printf("Bucle\n");
     if(len == -1){
       perror("read: ");
     }
     else if (ev->wd == wd){
+      // process event
       onNewFile(ev);
     }
   }
