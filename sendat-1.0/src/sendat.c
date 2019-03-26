@@ -58,7 +58,7 @@ void mqtt_setup(){
   char *host; // localhost by default
   int port;// 1883 by default
   int keepalive;// 60 by default
-  int clean_session;//  true by default
+  bool clean_session;//  true by default
   char* user;
   char* passwd;
 
@@ -75,7 +75,6 @@ void mqtt_setup(){
     port = 1883;
   }else{
     sscanf(env,"%d",&port);
-
   }
 
   env = getenv("KEEPALIVE");
@@ -89,8 +88,9 @@ void mqtt_setup(){
   if (!env || strcmp(env,"")==0){
     clean_session =true;
   }else{
-    sscanf(env,"%d",&clean_session);
+    sscanf(env,"%d",(int*)&clean_session);
   }
+
   env = getenv("MQTT_USER");
   if (!env || strcmp(env,"")==0){
     user =NULL;
@@ -138,7 +138,6 @@ void onNewFile(struct inotify_event* ev){
   int len;
   len = strlen(ev->name);
   if(strcmp(&ev->name[len-4],".dat") != 0){
-    fprintf(stderr,"Creado con extension: %s\n",&ev->name[len-4]);
     return;
   }
   // If file is .dat, open and store content in variable
@@ -154,7 +153,7 @@ void onNewFile(struct inotify_event* ev){
   read(dat, content, len);
 
   close(dat);
-  fprintf(stderr,"Enviando: %s\n",content);
+
   //publish content in mqtt
   mqtt_publish(content);
   free(content);

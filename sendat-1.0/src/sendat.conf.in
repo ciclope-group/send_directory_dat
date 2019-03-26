@@ -1,7 +1,7 @@
 # Path to installation directory
-BIN_PATH=
+BIN_PATH=.
 # Directory to watch
-DIRECTORY=/tmp/test
+DIRECTORY=.
 
 # mqtt host
 HOST=localhost
