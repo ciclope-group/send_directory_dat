@@ -29,6 +29,60 @@ struct mosquitto *mosq = NULL;
 char *topic = NULL;
 extern int errno;
 
+
+void daemonize(void){
+  // Make process a daemon
+  pid_t pid;
+  pid = fork();
+  // an error ocurred
+  if (pid < 0){
+    perror("Fork");
+    exit(EXIT_FAILURE);
+  }
+  // end parent
+  if(pid > 0){
+    exit(EXIT_SUCCESS);
+  }
+  /**************/
+  /* Child code */
+  /**************/
+  
+  //Become session leader
+  if(setsid()<0){
+    perror("Setsid");
+    exit(EXIT_FAILURE);
+  }
+  // Ignore SIGCHLD and SIGHUP
+  signal(SIGCHLD,SIG_IGN);
+  signal(SIGHUP,SIG_IGN);
+
+  // fork again
+  pid=fork();
+  // an error ocurred
+  if (pid < 0){
+    perror("Fork");
+    exit(EXIT_FAILURE);
+  }
+  // end parent
+  if(pid > 0){
+    exit(EXIT_SUCCESS);
+  }
+
+  /****************************/
+  /* Actual daemon begins now */
+  /****************************/
+
+  umask(0);
+  chdir("/etc/sendat");
+
+  // close all open files and streams
+  int x;
+  for (x = sysconf(_SC_OPEN_MAX); x>=0; x--)
+    {
+      close (x);
+    }
+}
+
 void msq_log_callback(struct mosquitto *mosq, void *userdata, int level, const char *str){
   /* Pring all log messages regardless of level. */
 
@@ -146,7 +200,7 @@ void onNewFile(struct inotify_event* ev){
   FILE* dat;
   char* content;
   long fsize;
-  struct stat datstat;
+
 
   // Build file path
   char* path,* directory;
@@ -189,6 +243,10 @@ void onNewFile(struct inotify_event* ev){
   free(content);
 }
 int main(void){
+  // First of all, daemonize process
+  daemonize();
+
+  
   int id,wd,len,pid;
   struct inotify_event* ev;
   char* directory;
