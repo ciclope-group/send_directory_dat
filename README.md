@@ -14,7 +14,7 @@ git clone https://github.com/ciclope-group/send_directory_dat
 A continuación entrar al repositorio e instalar el programa
 
 ```bash
-cd send_directory_data
+cd send_directory_dat
 ./configure
 make
 make install
@@ -27,7 +27,7 @@ Para desinstalar el programa, basta con entrar al mismo directorio donde se ha
 clonado el repositorio y desinstalar el programa
 
 ```bash
-cd send_directory_data
+cd send_directory_dat
 make uninstall
 ```
 
