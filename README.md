@@ -5,16 +5,19 @@ archivos *.dat que se crean en él
 
 ## Instalación
 
-Para instalarlo, primero hay que clonar el repositorio en la máquina local
+Para instalarlo, primero hay que [descargar el paquete](https://github.com/ciclope-group/send_directory_dat/blob/master/dist/sendat-1.0.tar.gz?raw=true) del repositorio de github.
 
 ```bash
-git clone https://github.com/ciclope-group/send_directory_dat 
+wget https://github.com/ciclope-group/send_directory_dat/blob/master/dist/sendat-1.0.tar.gz?raw=true
 ```
-
-A continuación entrar al repositorio e instalar el programa
+Después, extraer el contenido del paquete
+```bash
+tar -xzvf sendat-1.0.tar.gz
+```
+A continuación entrar al directorio e instalar el programa
 
 ```bash
-cd send_directory_dat
+cd sendat-1.0
 ./configure
 make
 make install
@@ -27,7 +30,7 @@ Para desinstalar el programa, basta con entrar al mismo directorio donde se ha
 clonado el repositorio y desinstalar el programa
 
 ```bash
-cd send_directory_dat
+cd sendat-1.0
 make uninstall
 ```
 
