@@ -49,7 +49,7 @@ void SIGTERM_handler(int sig){
     mosquitto_destroy(mosq);
     mosquitto_lib_cleanup();
     remove("/etc/sendat/sendat.pid");
-    fprintf(stderr,"Finish\n");
+    //    fprintf(stderr,"Finish\n");
     exit(0);
   }
 }
@@ -110,7 +110,7 @@ void mqtt_setup(){
   mosquitto_lib_init();
   mosq = mosquitto_new(NULL, clean_session, NULL);
   if(!mosq){
-    fprintf(stderr, "Error: Out of memory.\n");
+    //    fprintf(stderr, "Error: Out of memory.\n");
     exit(1);
   }
 
@@ -121,12 +121,12 @@ void mqtt_setup(){
   }
 
   if(mosquitto_connect(mosq, host, port, keepalive)){
-    fprintf(stderr, "Unable to connect to tcp://%s:%d.\n",host,port);
+    //    fprintf(stderr, "Unable to connect to tcp://%s:%d.\n",host,port);
     exit(1);
   }
   int loop = mosquitto_loop_start(mosq);
   if(loop != MOSQ_ERR_SUCCESS){
-    fprintf(stderr, "Unable to start loop: %i\n", loop);
+    //    fprintf(stderr, "Unable to start loop: %i\n", loop);
     exit(1);
   }
 }
@@ -139,7 +139,7 @@ void onNewFile(struct inotify_event* ev){
   int len;
   len = strlen(ev->name);
   if(strcmp(&ev->name[len-4],".dat") != 0){
-    fprintf(stderr,"Creado con extension: %s\n",&ev->name[len-4]);
+    //    fprintf(stderr,"Creado con extension: %s\n",&ev->name[len-4]);
     return;
   }
   // If file is .dat, open and store content in variable
@@ -162,17 +162,17 @@ void onNewFile(struct inotify_event* ev){
     path[len] = '/';
   }
   strcat(path, ev->name);
-  fprintf(stderr,"file: %s\n",path);
+  //  fprintf(stderr,"file: %s\n",path);
 
   dat = fopen(path, "rb");
   if(dat == NULL){
-    fprintf(stderr,"Error opening: %s\n",path);
+    //    fprintf(stderr,"Error opening: %s\n",path);
   }
     
   fseek(dat, 0, SEEK_END);
   fsize = ftell(dat);
   fseek(dat, 0, SEEK_SET); 
-  fprintf(stderr,"Content length: %d\n",fsize);
+  //  fprintf(stderr,"Content length: %d\n",fsize);
   
   content = malloc(fsize + 1);
   fread(content, fsize, 1, dat);
@@ -181,10 +181,10 @@ void onNewFile(struct inotify_event* ev){
 
   content[fsize] = 0;
     
-  fprintf(stderr,"Content: [%s]\n",content);
+  //  fprintf(stderr,"Content: [%s]\n",content);
   //publish content in mqtt
   mqtt_publish(content);
-  fprintf(stderr,"Sent\n");
+  //  fprintf(stderr,"Sent\n");
   
   free(content);
 }
