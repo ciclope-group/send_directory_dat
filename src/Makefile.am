@@ -13,3 +13,10 @@ install-exec-hook:
 	ln -s ../init.d/sendat /etc/rc5.d/S01sendat
 	ln -s ../init.d/sendat /etc/rc4.d/S01sendat
 	ln -s ../init.d/sendat /etc/rc3.d/S01sendat
+
+uninstall-hook:
+	rm -rf /etc/sendat
+	rm /etc/init.d/sendat
+	rm /etc/rc5.d/S01sendat
+	rm /etc/rc4.d/S01sendat
+	rm /etc/rc3.d/S01sendat

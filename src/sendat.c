@@ -17,7 +17,7 @@
 #endif
 
 #define NAME_MAX 60
-
+#define PATH_MAX 100
 #define ADDRESS     "tcp://localhost:1883"
 #define CLIENTID    "Client"
 #define TOPIC       "test"
@@ -48,6 +48,7 @@ void SIGTERM_handler(int sig){
     mosquitto_disconnect(mosq);
     mosquitto_destroy(mosq);
     mosquitto_lib_cleanup();
+    remove("/etc/sendat/sendat.pid");
     fprintf(stderr,"Finish\n");
     exit(0);
   }
@@ -142,21 +143,49 @@ void onNewFile(struct inotify_event* ev){
     return;
   }
   // If file is .dat, open and store content in variable
-  int dat;
+  FILE* dat;
   char* content;
+  long fsize;
   struct stat datstat;
 
-  dat= open(ev->name, O_RDONLY);
-  fstat(dat,&datstat);
-  len = sizeof(char)*datstat.st_size + 1;
-  content = (char*)malloc(len);
-  memset(content, 0, len);
-  read(dat, content, len);
+  // Build file path
+  char* path,* directory;
+  path=malloc(sizeof(char)*(PATH_MAX+NAME_MAX+1));
+  memset(path,0,sizeof(char)*(PATH_MAX+NAME_MAX+1));
+  // Get environment variable for directory to watch 
+  directory = getenv("DIRECTORY");
+  directory = directory == NULL?".":directory;
 
-  close(dat);
-  fprintf(stderr,"Enviando: %s\n",content);
+  strcpy(path,directory);
+  len=strlen(path);
+  if(path[len-1] != '/'){
+    path[len] = '/';
+  }
+  strcat(path, ev->name);
+  fprintf(stderr,"file: %s\n",path);
+
+  dat = fopen(path, "rb");
+  if(dat == NULL){
+    fprintf(stderr,"Error opening: %s\n",path);
+  }
+    
+  fseek(dat, 0, SEEK_END);
+  fsize = ftell(dat);
+  fseek(dat, 0, SEEK_SET); 
+  fprintf(stderr,"Content length: %d\n",fsize);
+  
+  content = malloc(fsize + 1);
+  fread(content, fsize, 1, dat);
+
+  fclose(dat);
+
+  content[fsize] = 0;
+    
+  fprintf(stderr,"Content: [%s]\n",content);
   //publish content in mqtt
   mqtt_publish(content);
+  fprintf(stderr,"Sent\n");
+  
   free(content);
 }
 int main(void){
@@ -184,7 +213,7 @@ int main(void){
   // start inotify
   id = inotify_init();
   // watch file creation in current directory
-  wd = inotify_add_watch(id, directory, IN_CREATE);
+  wd = inotify_add_watch(id, directory, IN_CLOSE_WRITE);
 
   while(1){
     // will be read when a file is created
