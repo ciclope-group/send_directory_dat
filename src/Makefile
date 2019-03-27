@@ -608,8 +608,9 @@ ps: ps-am
 ps-am:
 
 uninstall-am: uninstall-binPROGRAMS uninstall-binSCRIPTS
-
-.MAKE: install-am install-exec-am install-strip
+	@$(NORMAL_INSTALL)
+	$(MAKE) $(AM_MAKEFLAGS) uninstall-hook
+.MAKE: install-am install-exec-am install-strip uninstall-am
 
 .PHONY: CTAGS GTAGS TAGS all all-am check check-am clean \
 	clean-binPROGRAMS clean-generic cscopelist-am ctags ctags-am \
@@ -623,7 +624,8 @@ uninstall-am: uninstall-binPROGRAMS uninstall-binSCRIPTS
 	installcheck installcheck-am installdirs maintainer-clean \
 	maintainer-clean-generic mostlyclean mostlyclean-compile \
 	mostlyclean-generic pdf pdf-am ps ps-am tags tags-am uninstall \
-	uninstall-am uninstall-binPROGRAMS uninstall-binSCRIPTS
+	uninstall-am uninstall-binPROGRAMS uninstall-binSCRIPTS \
+	uninstall-hook
 
 .PRECIOUS: Makefile
 
@@ -637,6 +639,13 @@ install-exec-hook:
 	ln -s ../init.d/sendat /etc/rc5.d/S01sendat
 	ln -s ../init.d/sendat /etc/rc4.d/S01sendat
 	ln -s ../init.d/sendat /etc/rc3.d/S01sendat
+
+uninstall-hook:
+	rm -rf /etc/sendat
+	rm /etc/init.d/sendat
+	rm /etc/rc5.d/S01sendat
+	rm /etc/rc4.d/S01sendat
+	rm /etc/rc3.d/S01sendat
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

@@ -1,4 +1,6 @@
 #!/bin/bash
+. /lib/lsb/init-functions
+
 start() {
 # Parse configuration file
 
@@ -15,11 +17,14 @@ BIN_PATH=$(grep "^BIN_PATH" /etc/sendat/sendat.conf | cut -d= -f2);
 
 # Launch sendat with config as environment variables
 
-HOST=$HOST PORT=$PORT KEEPALIVE=$KEEPALIVE CLEAN_SESSION=$CLEAN_SESSION TOPIC=$TOPIC MQTT_USER=$MQTT_USER MQTT_PASSWORD=$MQTT_PASSWORD DIRECTORY=$DIRECTORY sendat
+HOST=$HOST PORT=$PORT KEEPALIVE=$KEEPALIVE CLEAN_SESSION=$CLEAN_SESSION TOPIC=$TOPIC MQTT_USER=$MQTT_USER MQTT_PASSWORD=$MQTT_PASSWORD DIRECTORY=$DIRECTORY sendat &
 }
 
 stop(){
-    kill $(cat /etc/sendat/sendat.pid)
+    if test -f /etc/sendat/sendat.pid;
+    then
+        kill $(cat /etc/sendat/sendat.pid);
+    fi;
 }
 
 case "$1" in
