@@ -1,4 +1,6 @@
 #!/bin/bash
+. /lib/lsb/init-functions
+
 start() {
 # Parse configuration file
 
