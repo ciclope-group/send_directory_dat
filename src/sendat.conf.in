@@ -1,7 +1,8 @@
-# Path to installation directory
-BIN_PATH=
 # Directory to watch
-DIRECTORY=/tmp/test
+DIRECTORY=/home
+
+# mqtt topic to publish on
+TOPIC=test
 
 # mqtt host
 HOST=localhost
@@ -15,8 +16,6 @@ KEEPALIVE=60
 # Clean session (1 for true, 0 for false)
 CLEAN_SESSION=1
 
-# mqtt topic to publish on
-TOPIC=test
 
 # mqtt user and password
 
