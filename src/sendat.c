@@ -26,6 +26,12 @@
 #define TIMEOUT     10000L
 
 struct mosquitto *mosq = NULL;
+char *host = NULL; // localhost by default
+int port;// 1883 by default
+int keepalive;// 60 by default
+int clean_session;//  true by default
+char* user = NULL;
+char* passwd = NULL;
 char *topic = NULL;
 extern int errno;
 
@@ -110,12 +116,7 @@ void SIGTERM_handler(int sig){
 
 void mqtt_setup(){
   // Get parameters from enviroment variables
-  char *host; // localhost by default
-  int port;// 1883 by default
-  int keepalive;// 60 by default
-  int clean_session;//  true by default
-  char* user;
-  char* passwd;
+
 
   char* env;
 
@@ -173,8 +174,10 @@ void mqtt_setup(){
   if (user != NULL && passwd != NULL){
     mosquitto_username_pw_set(mosq,user,passwd);
   }
+}
 
-  if(mosquitto_connect(mosq, host, port, keepalive)){
+void mqtt_publish(char* payload){
+    if(mosquitto_connect(mosq, host, port, keepalive)){
     //    fprintf(stderr, "Unable to connect to tcp://%s:%d.\n",host,port);
     exit(1);
   }
@@ -183,9 +186,8 @@ void mqtt_setup(){
     //    fprintf(stderr, "Unable to start loop: %i\n", loop);
     exit(1);
   }
-}
-void mqtt_publish(char* payload){
   mosquitto_publish(mosq,NULL,topic,strlen(payload),payload,0,0);
+  mosquitto_disconnect(mosq);
 }
 
 void onNewFile(struct inotify_event* ev){
