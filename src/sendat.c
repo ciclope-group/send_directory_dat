@@ -9,7 +9,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-
+#include <syslog.h>
 #ifdef HAVE_LIBMOSQUITTO
 #include <mosquitto.h>
 #else
@@ -52,7 +52,7 @@ void daemonize(void){
   /**************/
   /* Child code */
   /**************/
-  
+
   //Become session leader
   if(setsid()<0){
     perror("Setsid");
@@ -98,7 +98,7 @@ void msq_log_callback(struct mosquitto *mosq, void *userdata, int level, const c
     //case MOSQ_LOG_NOTICE:
   case MOSQ_LOG_WARNING:
   case MOSQ_LOG_ERR: {
-    printf("%i:%s\n", level, str);
+    syslog(LOG_ERR, "%i:%s", level,str);
   }
   }
 
@@ -110,6 +110,8 @@ void SIGTERM_handler(int sig){
     mosquitto_lib_cleanup();
     remove("/etc/sendat/sendat.pid");
     //    fprintf(stderr,"Finish\n");
+    syslog(LOG_NOTICE, "Finish");
+    closelog();
     exit(0);
   }
 }
@@ -166,6 +168,7 @@ void mqtt_setup(){
   mosq = mosquitto_new(NULL, clean_session, NULL);
   if(!mosq){
     //    fprintf(stderr, "Error: Out of memory.\n");
+    syslog(LOG_ERR,"Error: Out of memory.");
     exit(1);
   }
 
@@ -174,18 +177,21 @@ void mqtt_setup(){
   if (user != NULL && passwd != NULL){
     mosquitto_username_pw_set(mosq,user,passwd);
   }
+  int loop = mosquitto_loop_start(mosq);
+  if(loop != MOSQ_ERR_SUCCESS){
+    syslog(LOG_ERR, "Unable to start loop: %i\n", loop);
+    exit(1);
+  }
+  syslog(LOG_INFO, "Mqtt setup finished");
 }
 
 void mqtt_publish(char* payload){
     if(mosquitto_connect(mosq, host, port, keepalive)){
-    //    fprintf(stderr, "Unable to connect to tcp://%s:%d.\n",host,port);
+      syslog(LOG_ERR, "Unable to connect to tcp://%s:%d.\n",host,port);
     exit(1);
   }
-  int loop = mosquitto_loop_start(mosq);
-  if(loop != MOSQ_ERR_SUCCESS){
-    //    fprintf(stderr, "Unable to start loop: %i\n", loop);
-    exit(1);
-  }
+
+
   mosquitto_publish(mosq,NULL,topic,strlen(payload),payload,0,0);
   mosquitto_disconnect(mosq);
 }
@@ -208,7 +214,7 @@ void onNewFile(struct inotify_event* ev){
   char* path,* directory;
   path=malloc(sizeof(char)*(PATH_MAX+NAME_MAX+1));
   memset(path,0,sizeof(char)*(PATH_MAX+NAME_MAX+1));
-  // Get environment variable for directory to watch 
+  // Get environment variable for directory to watch
   directory = getenv("DIRECTORY");
   directory = directory == NULL?".":directory;
 
@@ -223,32 +229,34 @@ void onNewFile(struct inotify_event* ev){
   dat = fopen(path, "rb");
   if(dat == NULL){
     //    fprintf(stderr,"Error opening: %s\n",path);
+    syslog(LOG_ERR,"Error opening: %s\n",path);
+    return;
   }
-    
+
   fseek(dat, 0, SEEK_END);
   fsize = ftell(dat);
-  fseek(dat, 0, SEEK_SET); 
+  fseek(dat, 0, SEEK_SET);
   //  fprintf(stderr,"Content length: %d\n",fsize);
-  
+
   content = malloc(fsize + 1);
   fread(content, fsize, 1, dat);
 
   fclose(dat);
 
   content[fsize] = 0;
-    
+
   //  fprintf(stderr,"Content: [%s]\n",content);
   //publish content in mqtt
   mqtt_publish(content);
-  //  fprintf(stderr,"Sent\n");
-  
+  syslog(LOG_INFO,"File contents of %s sent",path);
   free(content);
 }
 int main(void){
+  openlog("sendat",LOG_CONS|LOG_PID|LOG_NDELAY,LOG_LOCAL1);
   // First of all, daemonize process
   daemonize();
 
-  
+
   int id,wd,len,pid;
   struct inotify_event* ev;
   char* directory;
