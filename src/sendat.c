@@ -177,22 +177,23 @@ void mqtt_setup(){
   if (user != NULL && passwd != NULL){
     mosquitto_username_pw_set(mosq,user,passwd);
   }
-  int loop = mosquitto_loop_start(mosq);
-  if(loop != MOSQ_ERR_SUCCESS){
-    syslog(LOG_ERR, "Unable to start loop: %i\n", loop);
-    exit(1);
-  }
+
   syslog(LOG_INFO, "Mqtt setup finished");
 }
 
 void mqtt_publish(char* payload){
-    if(mosquitto_connect(mosq, host, port, keepalive)){
-      syslog(LOG_ERR, "Unable to connect to tcp://%s:%d.\n",host,port);
+  if(mosquitto_connect(mosq, host, port, keepalive)){
+    syslog(LOG_ERR, "Unable to connect to tcp://%s:%d.\n",host,port);
+    exit(1);
+  }
+  mosquitto_publish(mosq,NULL,topic,strlen(payload),payload,0,0);
+
+  int loop = mosquitto_loop(mosq,-1,1);
+  if(loop != MOSQ_ERR_SUCCESS){
+    syslog(LOG_ERR, "Unable to start loop: %i\n", loop);
     exit(1);
   }
 
-
-  mosquitto_publish(mosq,NULL,topic,strlen(payload),payload,0,0);
   mosquitto_disconnect(mosq);
 }
 
@@ -282,11 +283,11 @@ int main(void){
   id = inotify_init();
   // watch file creation in current directory
   wd = inotify_add_watch(id, directory, IN_CLOSE_WRITE);
-
+  syslog(LOG_INFO,"Now watching %s",directory);
   while(1){
     // will be read when a file is created
     len=read(id, ev, sizeof(struct inotify_event) + NAME_MAX + 1);
-    printf("Bucle\n");
+    syslog(LOG_INFO,"New file created");
     if(len == -1){
       perror("read: ");
     }

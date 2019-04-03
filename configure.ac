@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.69])
-AC_INIT([sendat], [1.0], [developer@ciclope.info])
+AC_INIT([sendat], [1.1], [developer@ciclope.info])
 AM_INIT_AUTOMAKE
 AC_CONFIG_SRCDIR([src/sendat.c])
 AC_CONFIG_HEADERS([config.h])
