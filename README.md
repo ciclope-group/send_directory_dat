@@ -5,7 +5,7 @@ archivos *.dat que se crean en él
 
 ## Instalación
 
-Para instalarlo, primero hay que [descargar el paquete](https://github.com/ciclope-group/send_directory_dat/blob/master/dist/sendat-1.0.tar.gz?raw=true) del repositorio de github.
+Para instalarlo, primero hay que [descargar el paquete](https://github.com/ciclope-group/send_directory_dat/raw/master/dist/sendat-1.1.tar.gz) del repositorio de github.
 
 ```bash
 wget https://github.com/ciclope-group/send_directory_dat/raw/master/dist/sendat-1.0.tar.gz
